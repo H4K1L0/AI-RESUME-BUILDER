@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Resume Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f4f4; }
+    header { background:#002147; color:white; padding:20px; }
+    .container { width:90%; max-width:1100px; margin:auto; padding:20px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .card { background:white; padding:15px; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.1); }
+    label { font-weight:bold; margin-top:10px; display:block; }
+    input, textarea, select {
+      width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-top:5px;
+    }
+    textarea { resize:vertical; min-height:70px; }
+    button {
+      background:#002147; color:white; border:none; padding:10px 15px; border-radius:6px;
+      cursor:pointer; margin-top:10px;
+    }
+    .chip { background:#e3e9ff; padding:5px 8px; border-radius:6px; display:inline-block; cursor:pointer; margin:5px; }
+    .chip:hover { background:#c7d2ff; }
+    .resume { background:white; padding:20px; border-radius:10px; }
+    .tpl-modern .r-name { font-size:24px; font-weight:bold; }
+    .tpl-classic .r-name { font-size:22px; font-weight:bold; border-bottom:2px solid #000; }
+    .tpl-compact .r-name { font-size:18px; font-weight:bold; }
+    .section-title { background:#dce4ff; padding:5px; margin-top:15px; font-weight:bold; border-radius:6px; }
+    pre { background:#f0f0f0; padding:10px; border-radius:6px; white-space:pre-wrap; }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>AI Resume Builder – Intelligent Resume Generator</h1>
+</header>
+
+<div class="container">
+  <div class="grid">
+
+    <!-- LEFT PANEL (INPUTS) -->
+    <div class="card">
+      <h2>Enter Your Information</h2>
+
+      <label>Full Name</label>
+      <input id="fullName" placeholder="Your name here">
+
+      <label>Job Title</label>
+      <input id="jobTitle" placeholder="e.g. Software Developer">
+
+      <label>Location</label>
+      <input id="location" placeholder="City, Country">
+
+      <label>Select Industry / Role</label>
+      <select id="roleSelect">
+        <option value="">Choose role</option>
+        <option value="software_developer">Software Developer</option>
+        <option value="data_analyst">Data Analyst</option>
+        <option value="it_support">IT Support Technician</option>
+      </select>
+
+      <label>Skills (comma separated)</label>
+      <input id="skills" placeholder="Python, SQL, HTML">
+
+      <label>Profile Summary</label>
+      <textarea id="profile"></textarea>
+
+      <label>Job Description (Paste JD here)</label>
+      <textarea id="jobDesc"></textarea>
+
+      <button onclick="generateResume()">Generate Resume</button>
+
+      <h3 style="margin-top:20px;">Suggested Bullets (Click to Add)</h3>
+      <div id="suggestedBullets"></div>
+
+      <h3>Keyword Suggestions</h3>
+      <div id="keywordSuggestions"></div>
+
+      <h3>Your Learning Profile</h3>
+      <pre id="feedbackDisplay"></pre>
+
+      <button onclick="clearFeedback()">Clear Learning Data</button>
+    </div>
+
+    <!-- RIGHT PANEL (PREVIEW) -->
+    <div class="card">
+      <h2>Resume Preview</h2>
+
+      <div>
+        <span class="chip" onclick="setTemplate('tpl-modern')">Modern</span>
+        <span class="chip" onclick="setTemplate('tpl-classic')">Classic</span>
+        <span class="chip" onclick="setTemplate('tpl-compact')">Compact</span>
+      </div>
+
+      <div id="resumeOutput" class="resume tpl-modern">
+        <div class="r-name" id="rName">Your Name</div>
+        <div id="rTitle" style="color:#555;">Job title · Location</div>
+
+        <div class="section-title">Profile</div>
+        <div id="rProfile">Summary goes here...</div>
+
+        <div class="section-title">Skills</div>
+        <ul id="rSkills"></ul>
+
+        <div class="section-title">Experience</div>
+        <ul id="rExp"></ul>
+      </div>
+
+      <h3 style="margin-top:20px;">ATS Analysis</h3>
+      <div>Match Score: <b id="matchScore">0%</b></div>
+
+      <h4>Matched Keywords</h4>
+      <pre id="matchedArea"></pre>
+
+      <h4>Missing Keywords</h4>
+      <pre id="missingArea"></pre>
+
+      <button onclick="downloadHTML()">Download HTML</button>
+      <button onclick="downloadDOC()">Download DOC</button>
+      <button onclick="printPDF()">Print / Save as PDF</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* =============================================================
+   SMART SUGGESTION ENGINE
+============================================================= */
+const SmartSuggestions = {
+  software_developer: {
+    summary: [
+      "Passionate Software Developer skilled in building web applications and API integrations.",
+      "Detail-oriented developer with strong debugging and problem-solving skills."
+    ],
+    skills: ["JavaScript", "HTML", "CSS", "React", "Node.js", "Git"],
+    bullets: [
+      "Built responsive UI components using HTML, CSS, and React.",
+      "Developed REST APIs and integrated backend services.",
+      "Improved application performance by optimizing code and database queries."
+    ],
+    keywords: ["javascript", "api", "frontend", "backend", "debugging"]
+  },
+
+  data_analyst: {
+    summary: [
+      "Data Analyst with experience in dashboards, reporting, Python, and SQL.",
+      "Analytical thinker skilled in transforming data into insights."
+    ],
+    skills: ["Python", "SQL", "Excel", "Power BI", "Visualization"],
+    bullets: [
+      "Created dashboards to track business KPIs.",
+      "Performed data cleaning and transformation using Python.",
+      "Generated weekly data reports to support business decisions."
+    ],
+    keywords: ["python", "sql", "dashboards", "reporting", "analysis"]
+  },
+
+  it_support: {
+    summary: [
+      "IT Support Technician experienced in troubleshooting hardware/software issues.",
+      "Strong customer service and problem-solving skills."
+    ],
+    skills: ["Troubleshooting", "Windows", "Networking", "Active Directory"],
+    bullets: [
+      "Resolved technical issues for end-users and documented solutions.",
+      "Configured systems, software, and network devices.",
+      "Monitored system performance and handled support tickets."
+    ],
+    keywords: ["troubleshooting", "networking", "tickets", "configuration"]
+  }
+};
+
+
+/* =============================================================
+   FEEDBACK LOOP (Learning System)
+============================================================= */
+function loadFeedback() {
+    const raw = localStorage.getItem("resume_feedback_v1");
+    return raw ? JSON.parse(raw) : { summaryEdits:{}, bulletUsage:{}, skillUsage:{} };
+}
+function saveFeedback(data) {
+    localStorage.setItem("resume_feedback_v1", JSON.stringify(data));
+}
+function recordSummary(text) {
+    const fb = loadFeedback();
+    fb.summaryEdits[text] = (fb.summaryEdits[text]||0)+1;
+    saveFeedback(fb);
+}
+function recordBullet(text) {
+    const fb = loadFeedback();
+    fb.bulletUsage[text] = (fb.bulletUsage[text]||0)+1;
+    saveFeedback(fb);
+}
+function recordSkill(skill) {
+    const fb = loadFeedback();
+    fb.skillUsage[skill] = (fb.skillUsage[skill]||0)+1;
+    saveFeedback(fb);
+}
+function applyFeedback(list, type) {
+    const fb = loadFeedback();
+    let usage = fb[type];
+    return list.sort((a,b)=>(usage[b]||0)-(usage[a]||0));
+}
+function showFeedback() {
+    document.getElementById("feedbackDisplay").textContent =
+      JSON.stringify(loadFeedback(), null, 2);
+}
+function clearFeedback() {
+    localStorage.removeItem("resume_feedback_v1");
+    showFeedback();
+}
+
+
+/* =============================================================
+   JOB DESCRIPTION MATCHING + ATS SCORE
+============================================================= */
+function extractKeywords(text) {
+    return text.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .split(/\s+/)
+        .filter(w => w.length > 3);
+}
+
+function analyzeJD(resume, jd) {
+    const resumeWords = extractKeywords(resume);
+    const jdWords = extractKeywords(jd);
+
+    const jdSet = new Set(jdWords);
+    const resumeSet = new Set(resumeWords);
+
+    const matched = [...jdSet].filter(w => resumeSet.has(w));
+    const missing = [...jdSet].filter(w => !resumeSet.has(w));
+
+    const score = Math.round((matched.length / jdSet.size) * 100);
+
+    return { matched, missing, score };
+}
+
+
+/* =============================================================
+   RESUME GENERATION
+============================================================= */
+function generateResume() {
+    const role = document.getElementById("roleSelect").value;
+    const fullName = document.getElementById("fullName").value;
+    const job = document.getElementById("jobTitle").value;
+    const location = document.getElementById("location").value;
+    const jobDesc = document.getElementById("jobDesc").value;
+    let skills = document.getElementById("skills").value.split(",").map(s=>s.trim());
+
+    let profile = document.getElementById("profile").value;
+
+    if (role && SmartSuggestions[role]) {
+        // Apply smart suggestions
+        const s = SmartSuggestions[role];
+
+        // Apply feedback to suggestions
+        let improvedSummaries = applyFeedback(s.summary, "summaryEdits");
+        let improvedBullets = applyFeedback(s.bullets, "bulletUsage");
+        let improvedSkills = applyFeedback(s.skills, "skillUsage");
+
+        if (!profile.trim()) {
+            profile = improvedSummaries[0];
+            document.getElementById("profile").value = profile;
+        }
+
+        // Insert suggested bullets
+        let sug = document.getElementById("suggestedBullets");
+        sug.innerHTML = "";
+        improvedBullets.forEach(b => {
+            let div = document.createElement("div");
+            div.className = "chip";
+            div.textContent = b;
+            div.onclick = () => {
+                addBullet(b);
+                recordBullet(b);
+            };
+            sug.appendChild(div);
+        });
+
+        // Skill suggestions
+        document.getElementById("keywordSuggestions").innerText = improvedSkills.join(", ");
+    }
+
+    // Update preview
+    document.getElementById("rName").innerText = fullName;
+    document.getElementById("rTitle").innerText = job + " · " + location;
+    document.getElementById("rProfile").innerText = profile;
+
+    // Skills
+    let rSkills = document.getElementById("rSkills");
+    rSkills.innerHTML = "";
+    skills.forEach(s=>{
+        let li=document.createElement("li");
+        li.textContent = s;
+        rSkills.appendChild(li);
+    });
+
+    // ATS analysis
+    const resumeText = fullName + " " + job + " " + profile + " " + skills.join(" ");
+    const result = analyzeJD(resumeText, jobDesc);
+
+    document.getElementById("matchScore").innerText = result.score + "%";
+    document.getElementById("matchedArea").innerText = result.matched.join(", ");
+    document.getElementById("missingArea").innerText = result.missing.join(", ");
+
+    showFeedback();
+}
+
+function addBullet(text) {
+    let ul = document.getElementById("rExp");
+    let li = document.createElement("li");
+    li.innerText = text;
+    ul.appendChild(li);
+}
+
+
+/* =============================================================
+   EXPORT FUNCTIONS
+============================================================= */
+function downloadHTML() {
+    const blob = new Blob([document.getElementById("resumeOutput").outerHTML], {type:"text/html"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "resume.html";
+    a.click();
+}
+
+function downloadDOC() {
+    const html = document.getElementById("resumeOutput").outerHTML;
+    const blob = new Blob([html], {type:"application/msword"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "resume.doc";
+    a.click();
+}
+
+function printPDF() {
+    window.print();
+}
+
+
+/* =============================================================
+   TEMPLATE SWITCHER
+============================================================= */
+function setTemplate(tpl) {
+    let r = document.getElementById("resumeOutput");
+    r.className = "resume " + tpl;
+}
+
+
+// Track summary edits
+document.getElementById("profile").addEventListener("blur", ()=>{
+    let text = document.getElementById("profile").value.trim();
+    if (text.length > 10) recordSummary(text);
+});
+
+</script>
+
+</body>
+</html>
