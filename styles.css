@@ -1,0 +1,31 @@
+body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
+.container { max-width: 1200px; margin: auto; }
+h1 { text-align: center; }
+form { display: grid; gap: 10px; max-width: 400px; margin-bottom: 20px; }
+label { display: block; }
+input, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+.resume-preview { border: 1px solid #ccc; padding: 20px; background: white; max-width: 800px; margin: 20px auto; }
+
+/* Classic Template */
+.classic { font-family: 'Times New Roman', serif; color: black; }
+.classic h2 { border-bottom: 2px solid rgb(9, 9, 9); margin-bottom: 10px; }
+.classic ul { list-style-type: disc; margin-left: 20px; }
+
+/* Modern Template */
+.modern { font-family: 'Helvetica', sans-serif; color: #333; }
+.modern h2 { color: #007bff; border-left: 5px solid #007bff; padding-left: 10px; }
+.modern .contact i { margin-right: 10px; color: #007bff; }
+.modern ul { list-style-type: none; padding: 0; }
+.modern li:before { content: '\f058'; font-family: 'Font Awesome 6 Free'; margin-right: 10px; color: #007bff; }
+
+/* Creative Template */
+.creative { font-family: 'Verdana', sans-serif; background: #f9f9f9; border: 2px dashed #063c65; padding: 15px; color: #222; }
+.creative h2 { background: #1d6271; color: white; padding: 5px; text-align: center; }
+.creative .contact { display: flex; justify-content: space-around; }
+.creative ul { list-style-type: square; color: #27419f; }
+.creative li { margin-bottom: 5px; }
+
+/* AI Section */
+.ai-section textarea { width:100%; padding:12px; border:2px solid #007acc; border-radius:8px; }
+.ai-section button { background:#007acc; color:white; padding:12px 20px; border:none; border-radius:8px; margin-top:8px; cursor:pointer; }
+.feedback-box { margin:20px 0; }
